@@ -157,8 +157,9 @@
 };
 
 &pm660l_wled {
-	qcom,led-strings-list = [00 01];
+	qcom,string-cfg = <3>;	/* strings 1-2 (bitmask) */
 	qcom,en-cabc;
+	/delete-property/ qcom,auto-calibration;
 };
 
 &pm660l_l3 {
