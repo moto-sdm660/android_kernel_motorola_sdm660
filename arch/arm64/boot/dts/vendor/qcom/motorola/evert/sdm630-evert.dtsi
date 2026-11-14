@@ -17,22 +17,59 @@
 		spi4 = &spi_4;
 	};
 
-	firmware: firmware {
-		android {
-			compatible = "android,firmware";
-			fstab {
-				compatible = "android,fstab";
-				vendor {
-					compatible = "android,vendor";
-					dev = "/dev/block/platform/soc/c0c4000.sdhci/by-name/vendor";
-					type = "ext4";
-					mnt_flags = "ro,barrier=1,discard";
-					fsmgr_flags = "wait,slotselect,verify";
-					status = "ok";
-				};
-			};
+	/delete-node/ firmware;
+
+	// ramoops: same layout as the 4.4 kernel (no ECC), so the logs of a
+	// failed boot can be read from a 4.4 based recovery
+	reserved-memory {
+		ramoops {
+			/delete-property/ ecc-size;
+		};
+
+		// Written by TrustZone (backup of its log and the CPU
+		// contexts on a watchdog bite), reserved like on 4.4.
+		tzlog_bck_region@aefcf000 {
+			no-map;
+			reg = <0x0 0xaefcf000 0x0 0x3000>;
+		};
+
+		wdog_cpuctx_region@aefd2000 {
+			no-map;
+			reg = <0x0 0xaefd2000 0x0 0x2e000>;
 		};
 	};
+
+	// The debug UART console blocks the framebuffer unblank and keeps the
+	// SoC out of XO shutdown, see payton.
+	chosen {
+		/delete-property/ stdout-path;
+	};
+};
+
+&soc {
+	// USB 2.0 only: no SuperSpeed PHY.
+	ssphy: ssphy@c010000 {
+		status = "disabled";
+	};
+
+	usb_nop_phy: usb_nop_phy {
+		compatible = "usb-nop-xceiv";
+	};
+};
+
+&usb3 {
+	dwc3@a800000 {
+		usb-phy = <&qusb_phy0>, <&usb_nop_phy>;
+		maximum-speed = "high-speed";
+	};
+};
+
+&uartblsp1dm1 {
+	status = "disabled";
+};
+
+&mdss_dp_ctrl {
+	status = "disabled";
 };
 
 
